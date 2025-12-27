@@ -1,5 +1,5 @@
 // Green Avenue API - Separate project, connects to same Google Sheets
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFwrvp1khqdo0jNFx7bkF4ck36jHTfP99NLii0bjF0VEqW14kUIUuNYeqsTKRn24kq_Q/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwi6a1vm4x4H8dkh6F27QntK-TsGqpX8SUBq_QJ03lNGLU7CrzkHwRpRPZe3Mp1xIEiqQ/exec';
 
 // Connected to real API!
 const MOCK_MODE = false;
@@ -75,10 +75,11 @@ const mockData = {
 
 // API Functions
 export const api = {
-  // Auth
-  async login(email, password) {
+  // Auth - Supports Email OR Phone Number (same as original Code.gs)
+  async login(input, password) {
     if (MOCK_MODE) {
-      if (email === 'admin@greenavenue.com' && password === 'admin123') {
+      // Mock login for testing
+      if ((input === 'admin@greenavenue.com' || input === '9876543210') && password === 'admin123') {
         localStorage.setItem('user', JSON.stringify(mockUser));
         return { success: true, user: mockUser };
       }
@@ -86,7 +87,22 @@ export const api = {
     }
     
     try {
-      const result = await postToGoogleScript('login', { email, password });
+      const result = await postToGoogleScript('login', { input, password });
+      
+      // Handle response - API returns { success: true, user: {...} }
+      if (result && result.success && result.user) {
+        const user = {
+          email: result.user.email,
+          site: result.user.site,
+          role: result.user.role,
+          name: result.user.name || result.user.email?.split('@')[0],
+          phone: result.user.phone
+        };
+        localStorage.setItem('user', JSON.stringify(user));
+        return { success: true, user };
+      }
+      
+      // Handle old format response (just user object)
       if (result && result.email) {
         const user = {
           email: result.email,
@@ -98,11 +114,12 @@ export const api = {
         localStorage.setItem('user', JSON.stringify(user));
         return { success: true, user };
       }
+      
       return { success: false, message: result?.message || 'Invalid credentials' };
     } catch (e) {
       console.error('Login error:', e);
       // Fallback to mock
-      if (email === 'admin@greenavenue.com' && password === 'admin123') {
+      if ((input === 'admin@greenavenue.com' || input === '9876543210') && password === 'admin123') {
         localStorage.setItem('user', JSON.stringify(mockUser));
         return { success: true, user: mockUser };
       }

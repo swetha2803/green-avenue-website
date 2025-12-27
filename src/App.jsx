@@ -146,7 +146,7 @@ function LoadingScreen() {
 // LOGIN PAGE
 // ============================================================================
 function LoginPage({ onLogin, showToast }) {
-  const [email, setEmail] = useState('');
+  const [input, setInput] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -158,7 +158,7 @@ function LoginPage({ onLogin, showToast }) {
     setError('');
     
     try {
-      const result = await api.login(email, password);
+      const result = await api.login(input, password);
       if (result.success) {
         onLogin(result.user);
         showToast('Welcome back!');
@@ -170,6 +170,9 @@ function LoginPage({ onLogin, showToast }) {
     }
     setLoading(false);
   };
+
+  // Check if input looks like a phone number
+  const isPhoneInput = /^\d+$/.test(input);
 
   return (
     <div className="min-h-screen bg-dark-950 flex items-center justify-center p-4">
@@ -214,18 +217,25 @@ function LoginPage({ onLogin, showToast }) {
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="label">Email Address</label>
+              <label className="label">Email or Phone Number</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-400" />
+                {isPhoneInput ? (
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-400" />
+                ) : (
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-400" />
+                )}
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
                   className="input pl-12"
-                  placeholder="your@email.com"
+                  placeholder="Enter email or phone number"
                   required
                 />
               </div>
+              <p className="text-xs text-dark-500 mt-1">
+                {isPhoneInput ? '📱 Logging in with phone number' : '✉️ Enter your registered email or phone'}
+              </p>
             </div>
             
             <div>
@@ -267,7 +277,7 @@ function LoginPage({ onLogin, showToast }) {
           </form>
           
           <p className="text-center text-dark-500 text-sm mt-6">
-            Demo: admin@greenavenue.com / admin123
+            Use your registered email or phone number
           </p>
         </div>
       </motion.div>
