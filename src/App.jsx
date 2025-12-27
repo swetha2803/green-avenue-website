@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, Users, UserCheck, Bell, Building2, Vote, CreditCard, 
   HeadphonesIcon, Settings, LogOut, Menu, X, Search, Plus,
   ChevronRight, Phone, Mail, MapPin, Clock, CheckCircle2,
   AlertCircle, TrendingUp, Calendar, Shield, Eye, EyeOff,
-  Send, RefreshCw, Trash2, ExternalLink
+  Send, RefreshCw, Trash2, ExternalLink, MessageCircle, Bot,
+  Sparkles, Share2, Download, Smartphone
 } from 'lucide-react';
 import { api } from './api';
 
@@ -100,6 +101,9 @@ export default function App() {
         </div>
       </main>
       
+      {/* AI Chatbot */}
+      <AIChatbot user={user} />
+      
       {/* Toast */}
       <AnimatePresence>
         {toast && (
@@ -107,7 +111,7 @@ export default function App() {
             initial={{ opacity: 0, y: 50, x: '-50%' }}
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: 50, x: '-50%' }}
-            className={`fixed bottom-6 left-1/2 z-50 px-6 py-3 rounded-xl flex items-center gap-3 shadow-2xl ${
+            className={`fixed bottom-6 left-1/2 z-40 px-6 py-3 rounded-xl flex items-center gap-3 shadow-2xl ${
               toast.type === 'success' ? 'bg-primary-500 text-white' : 'bg-red-500 text-white'
             }`}
           >
@@ -358,7 +362,8 @@ function Sidebar({ user, currentPage, setCurrentPage, sidebarOpen, setSidebarOpe
                 <span className="badge badge-success">{user?.role}</span>
               </div>
             </div>
-            <button onClick={logout} className="btn btn-secondary w-full">
+            <InstallAppButton />
+            <button onClick={logout} className="btn btn-secondary w-full mt-2">
               <LogOut className="w-4 h-4" />
               Logout
             </button>
@@ -624,7 +629,7 @@ function VisitorsPage({ user, showToast }) {
         </button>
       </div>
 
-      {/* OTP Modal */}
+      {/* OTP Modal with WhatsApp Share */}
       {otp && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -638,11 +643,25 @@ function VisitorsPage({ user, showToast }) {
             className="glass-card max-w-sm w-full text-center"
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-xl font-bold mb-4">Visitor OTP</h3>
+            <h3 className="text-xl font-bold mb-4">🎫 Visitor OTP</h3>
             <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl p-6 mb-4">
               <p className="text-4xl font-mono font-bold tracking-widest text-white">{otp}</p>
             </div>
-            <p className="text-dark-400 text-sm mb-4">Valid for 24 hours</p>
+            <p className="text-dark-400 text-sm mb-4">Valid for 24 hours • Show at gate</p>
+            
+            {/* WhatsApp Share Button */}
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`🏠 *Green Avenue Visitor Pass*\n\n🎫 OTP: *${otp}*\n\n✅ Show this OTP at the gate.\n⏰ Valid for 24 hours.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-[#25D366] text-white rounded-xl hover:bg-[#128C7E] transition-colors mb-3"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              Share via WhatsApp
+            </a>
+            
             <button onClick={() => setOtp(null)} className="btn btn-secondary w-full">Close</button>
           </motion.div>
         </motion.div>
@@ -898,6 +917,309 @@ function AdminPage({ user }) {
         </div>
       </div>
     </div>
+  );
+}
+
+// ============================================================================
+// INSTALL APP BUTTON - PWA Support
+// ============================================================================
+function InstallAppButton() {
+  const [canInstall, setCanInstall] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+      return;
+    }
+    
+    // Check for install prompt
+    const checkInstall = () => {
+      if (window.deferredPrompt) {
+        setCanInstall(true);
+      }
+    };
+    
+    checkInstall();
+    window.addEventListener('beforeinstallprompt', () => setCanInstall(true));
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true);
+      setCanInstall(false);
+    });
+  }, []);
+
+  const handleInstall = async () => {
+    const prompt = window.deferredPrompt;
+    if (!prompt) return;
+    
+    prompt.prompt();
+    const result = await prompt.userChoice;
+    if (result.outcome === 'accepted') {
+      setIsInstalled(true);
+    }
+    window.deferredPrompt = null;
+    setCanInstall(false);
+  };
+
+  if (isInstalled) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 bg-primary-500/10 rounded-lg text-primary-400 text-sm mb-2">
+        <CheckCircle2 className="w-4 h-4" />
+        App Installed
+      </div>
+    );
+  }
+
+  if (!canInstall) return null;
+
+  return (
+    <button
+      onClick={handleInstall}
+      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl text-white font-medium mb-2 hover:opacity-90 transition-opacity"
+    >
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      Install App
+    </button>
+  );
+}
+
+// ============================================================================
+// AI CHATBOT - Smart Assistant
+// ============================================================================
+function AIChatbot({ user }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { role: 'bot', text: `Hi ${user?.name || 'there'}! 👋 I'm your Green Avenue assistant. How can I help you today?`, time: new Date() }
+  ]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // AI Response Generator - Smart responses based on keywords
+  const generateAIResponse = (userMessage) => {
+    const msg = userMessage.toLowerCase();
+    
+    // Greetings
+    if (msg.match(/^(hi|hello|hey|good morning|good evening)/)) {
+      return `Hello! 😊 Welcome to Green Avenue. I can help you with:\n\n• 🎫 Visitor registration\n• 💰 Payment queries\n• 📢 Community notices\n• 🔧 Service requests\n• 📞 Emergency contacts\n\nWhat would you like to know?`;
+    }
+    
+    // Visitor related
+    if (msg.includes('visitor') || msg.includes('guest')) {
+      return `🎫 **Visitor Management**\n\nTo register a visitor:\n1. Go to **Visitors** page\n2. Click **Add Visitor**\n3. Enter visitor details\n4. Share the OTP with your guest\n\nThe OTP is valid for 24 hours. You can also share it via WhatsApp!\n\nNeed help with anything else?`;
+    }
+    
+    // Payment related
+    if (msg.includes('payment') || msg.includes('maintenance') || msg.includes('fee') || msg.includes('pay')) {
+      return `💰 **Maintenance Payments**\n\n• Monthly maintenance: ₹1,500\n• Due date: 5th of every month\n• Late fee: ₹100 after 10th\n\n**Payment Methods:**\n• UPI: greenavenue@paytm\n• Bank Transfer: HDFC XXXX1234\n• QR Code: Available on Payments page\n\nGo to **Payments** page to submit your payment receipt.`;
+    }
+    
+    // Emergency
+    if (msg.includes('emergency') || msg.includes('urgent') || msg.includes('help')) {
+      return `🚨 **Emergency Contacts**\n\n• 🚔 Police: 100\n• 🚒 Fire: 101\n• 🚑 Ambulance: 102\n• 🛡️ Security: 9876543210\n• 👨‍💼 Association: 9876543211\n\nFor non-emergencies, submit a **Service Request**.`;
+    }
+    
+    // Rules & Regulations
+    if (msg.includes('rule') || msg.includes('regulation') || msg.includes('guideline')) {
+      return `📋 **Community Guidelines**\n\n• 🔇 Quiet hours: 10 PM - 7 AM\n• 🚗 Parking: Designated spots only\n• 🐕 Pets: Keep on leash in common areas\n• 🚮 Garbage: Segregate & dispose by 8 AM\n• 🏗️ Renovations: Prior approval needed\n\nCheck **Notices** for latest updates!`;
+    }
+    
+    // Facilities
+    if (msg.includes('facility') || msg.includes('amenity') || msg.includes('gym') || msg.includes('pool') || msg.includes('park')) {
+      return `🏢 **Community Facilities**\n\n• 🏋️ Gym: 6 AM - 10 PM\n• 🏊 Pool: 6 AM - 8 PM\n• 🌳 Park: Always open\n• 🎉 Clubhouse: Book via requests\n• 🚗 Parking: 2 spots per unit\n\nBook facilities through **Service Requests**.`;
+    }
+    
+    // Contact/Support
+    if (msg.includes('contact') || msg.includes('support') || msg.includes('call') || msg.includes('reach')) {
+      return `📞 **Contact Information**\n\n• **Office Hours:** 9 AM - 6 PM\n• **Association Email:** info@greenavenue.com\n• **Security:** 9876543210\n• **Maintenance:** 9876543211\n\nOr submit a **Service Request** anytime!`;
+    }
+    
+    // Events
+    if (msg.includes('event') || msg.includes('festival') || msg.includes('celebration')) {
+      return `🎉 **Upcoming Events**\n\nCheck the **Notices** section for:\n• Community gatherings\n• Festival celebrations\n• Annual general meetings\n• Sports tournaments\n\nWant to organize an event? Contact the association!`;
+    }
+    
+    // Property
+    if (msg.includes('rent') || msg.includes('sale') || msg.includes('property') || msg.includes('flat')) {
+      return `🏠 **Property Listings**\n\nLooking to rent or buy?\n→ Check **Properties** page\n\nWant to list your property?\n1. Go to **Properties**\n2. Click **Add Listing**\n3. Fill in details\n\n*Note: Only owners can list properties.*`;
+    }
+    
+    // Polls
+    if (msg.includes('poll') || msg.includes('vote') || msg.includes('survey')) {
+      return `🗳️ **Community Polls**\n\nActive polls are on the **Polls** page.\n\n• Each resident gets one vote\n• Vote before the deadline\n• Results shown after voting ends\n\nYour voice matters! 🎯`;
+    }
+    
+    // Thanks
+    if (msg.match(/(thank|thanks|thx)/)) {
+      return `You're welcome! 😊 Happy to help. Is there anything else you'd like to know about Green Avenue?`;
+    }
+    
+    // Bye
+    if (msg.match(/(bye|goodbye|see you|later)/)) {
+      return `Goodbye! 👋 Have a great day. Feel free to chat anytime you need help!`;
+    }
+    
+    // Default response
+    return `I understand you're asking about "${userMessage}". 🤔\n\nHere's what I can help with:\n\n• 🎫 Visitor registration\n• 💰 Payment information\n• 📢 Notices & events\n• 🔧 Service requests\n• 📞 Emergency contacts\n• 🏢 Facility bookings\n• 📋 Rules & guidelines\n\nTry asking about any of these topics!`;
+  };
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    
+    const userMessage = input.trim();
+    setInput('');
+    
+    // Add user message
+    setMessages(prev => [...prev, { role: 'user', text: userMessage, time: new Date() }]);
+    
+    // Simulate typing
+    setIsTyping(true);
+    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 700));
+    setIsTyping(false);
+    
+    // Add bot response
+    const botResponse = generateAIResponse(userMessage);
+    setMessages(prev => [...prev, { role: 'bot', text: botResponse, time: new Date() }]);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  // Quick suggestions
+  const suggestions = ['Visitor OTP', 'Payment info', 'Emergency', 'Facilities'];
+
+  return (
+    <>
+      {/* Chat Button */}
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setIsOpen(!isOpen)}
+        className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 ${
+          isOpen 
+            ? 'bg-dark-700' 
+            : 'bg-gradient-to-r from-primary-500 to-accent-500'
+        }`}
+      >
+        {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+        {!isOpen && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+        )}
+      </motion.button>
+
+      {/* Chat Window */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-24 right-6 z-50 w-[90vw] max-w-[380px] h-[500px] max-h-[70vh] bg-dark-900 rounded-2xl border border-dark-700 shadow-2xl flex flex-col overflow-hidden"
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-primary-600 to-accent-600 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <Bot className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Green Avenue Assistant</h3>
+                <p className="text-xs text-white/70 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> AI-Powered
+                </p>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.map((msg, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                    msg.role === 'user' 
+                      ? 'bg-primary-500 text-white rounded-br-md' 
+                      : 'bg-dark-800 text-dark-100 rounded-bl-md'
+                  }`}>
+                    <p className="text-sm whitespace-pre-line">{msg.text}</p>
+                    <p className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-dark-500'}`}>
+                      {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+              
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-dark-800 rounded-2xl rounded-bl-md px-4 py-3">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-dark-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-dark-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-dark-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Quick Suggestions */}
+            {messages.length <= 2 && (
+              <div className="px-4 pb-2 flex flex-wrap gap-2">
+                {suggestions.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => { setInput(s); }}
+                    className="text-xs px-3 py-1.5 bg-dark-800 hover:bg-dark-700 rounded-full text-dark-300 transition-colors"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="p-4 border-t border-dark-700">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask me anything..."
+                  className="flex-1 bg-dark-800 border border-dark-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                  className="w-12 h-12 bg-primary-500 hover:bg-primary-600 disabled:bg-dark-700 disabled:text-dark-500 rounded-xl flex items-center justify-center transition-colors"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
