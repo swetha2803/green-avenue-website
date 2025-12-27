@@ -1,5 +1,5 @@
 // Green Avenue API - Separate project, connects to same Google Sheets
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwi6a1vm4x4H8dkh6F27QntK-TsGqpX8SUBq_QJ03lNGLU7CrzkHwRpRPZe3Mp1xIEiqQ/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzL_3ZWGnWaTK6_5suUcDPmRqcjXxW5vhZ6k4yfXesOzgyN_9k14qRpNj-tvxSra1L1FQ/exec';
 
 // Connected to real API!
 const MOCK_MODE = false;
@@ -30,23 +30,23 @@ async function callGoogleScript(action, data = {}) {
   }
 }
 
-// POST request for actions that modify data
+// POST request for actions that modify data (now using GET to avoid CORS)
 async function postToGoogleScript(action, data = {}) {
   try {
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-      body: JSON.stringify({ action, ...data }),
+    // Use GET to avoid CORS preflight issues with Google Apps Script
+    const url = new URL(APPS_SCRIPT_URL);
+    url.searchParams.append('action', action);
+    url.searchParams.append('data', JSON.stringify(data));
+    
+    const response = await fetch(url.toString(), {
+      method: 'GET',
       redirect: 'follow'
     });
     
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error(`Error posting ${action}:`, error);
+    console.error(`Error calling ${action}:`, error);
     return null;
   }
 }
@@ -115,9 +115,11 @@ export const api = {
         return { success: true, user };
       }
       
+      console.log('Login API response:', result);
       return { success: false, message: result?.message || 'Invalid credentials' };
     } catch (e) {
       console.error('Login error:', e);
+      console.log('API URL:', APPS_SCRIPT_URL);
       // Fallback to mock
       if ((input === 'admin@greenavenue.com' || input === '9876543210') && password === 'admin123') {
         localStorage.setItem('user', JSON.stringify(mockUser));
