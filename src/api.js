@@ -1,5 +1,6 @@
 // Green Avenue API - Separate project, connects to same Google Sheets
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzL_3ZWGnWaTK6_5suUcDPmRqcjXxW5vhZ6k4yfXesOzgyN_9k14qRpNj-tvxSra1L1FQ/exec';
+// Using ORIGINAL Green Avenue project (already deployed with "Anyone" access)
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz0S4j2W2j3ZEE72xNEk8DdZlrS49QxrG85aZxcv1NK6qjO9aUkpDbVsgMGHdJ8RLoPzQ/exec';
 
 // Connected to real API!
 const MOCK_MODE = false;
